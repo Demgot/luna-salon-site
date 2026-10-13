@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {salon} from '../content.js';
+test('Unconfirmed salon details and photos are not published',()=>{assert.equal(salon.phone,null);assert.equal(salon.bookingUrl,null);assert.equal(salon.hero.before,null);for(const key of ['categories','works','masters','reviews'])assert.deepEqual(salon[key],[]);});
+test('Server serves site assets and rejects unavailable and traversal paths',async()=>{const child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:'5174'}});try{await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject);child.once('exit',code=>reject(Error('Server exited '+code)));});const response=await fetch('http://127.0.0.1:5174/');assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/html/);assert.match(await response.text(),/Luna — салон красоты в Смоленске/);for(const url of ['styles.css','app.js','content.js','assets/share.svg'])assert.equal((await fetch('http://127.0.0.1:5174/'+url)).status,200);for(const url of ['missing','%2e%2e%2fpackage.json','.git/config'])assert.equal((await fetch('http://127.0.0.1:5174/'+url)).status,404);}finally{child.kill();}});
